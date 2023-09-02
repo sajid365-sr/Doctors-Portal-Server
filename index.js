@@ -36,6 +36,8 @@ function sendBookingEmail(booking) {
   //   },
   // });
 
+  console.log(booking);
+
   // MailGun transporter setup
   const auth = {
     auth: {
@@ -65,7 +67,7 @@ function sendBookingEmail(booking) {
       if (error) {
         console.log(error);
       } else {
-        console.log("Email sent: " + info.response);
+        console.log("Email sent: " + info);
       }
     }
   );
@@ -219,7 +221,7 @@ async function run() {
     //Get specific booking
     app.get("/bookings/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: ObjectId(id) };
+      const query = { _id: new ObjectId(id) };
       const booking = await BookingCollection.findOne(query);
 
       res.send(booking);
@@ -245,6 +247,17 @@ async function run() {
 
       // Send email to patient about booking confirmation
       sendBookingEmail(booking);
+
+      res.send(result);
+    });
+
+    // cancel an appointment
+    app.put("/bookings/cancel/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+
+      const result = await BookingCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
 
       res.send(result);
     });
@@ -276,7 +289,7 @@ async function run() {
     // Make an Admin
     app.put("/users/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
-      const filter = { _id: ObjectId(id) };
+      const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updatedDoc = {
         $set: {
@@ -291,6 +304,19 @@ async function run() {
       );
       res.send(result);
     });
+    // Delete user
+    app.delete(
+      "/users/delete/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+
+        const result = await UserCollection.deleteOne(filter);
+        res.send(result);
+      }
+    );
 
     //  Stripe payment system integration;
     app.post("/create-payment-intent", async (req, res) => {
@@ -314,7 +340,7 @@ async function run() {
     app.post("/payments", async (req, res) => {
       const payment = req.body;
       const id = payment.bookingId;
-      const filter = { _id: ObjectId(id) };
+      const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updatedDoc = {
         $set: {
@@ -369,7 +395,7 @@ async function run() {
     // Delete doctors
     app.delete("/doctors/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
-      const filter = { _id: ObjectId(id) };
+      const filter = { _id: new ObjectId(id) };
       const result = await DoctorsCollection.deleteOne(filter);
 
       res.send(result);
